@@ -1,0 +1,450 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithm}
+% \usepackage{algorithmic}
+\usepackage{algpseudocode}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage[utf8x]{inputenc}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Survey of Vector Database Management Systems}
+
+\author{\IEEEauthorblockN{Sandesh katta}
+\IEEEauthorblockA{\textit{Department of Computer Science} \\
+\textit{Purdue University}\\
+West Lafayette, USA \\
+katta5@purdue.edu}
+\and
+\IEEEauthorblockN{Pruthvi Belide}
+\IEEEauthorblockA{\textit{Department of Computer Science} \\
+\textit{Purdue University}\\
+West Lafayette, USA \\
+pbelide@purdue.edu}
+\and
+\IEEEauthorblockN{ Lakshmi P Maddipati }
+\IEEEauthorblockA{\textit{Department of Industrial Engineering} \\
+\textit{Purdue University}\\
+West Lafayette, USA \\
+lmaddipa@purdue.edu}
+}
+
+\maketitle
+
+\begin{abstract}
+\normalfont The surge in unstructured data, coupled with the prevalent use of large language models (LLMs), has exposed the difficulties of handling large-scale high-dimensional vector data. Existing systems that deal with this kind of vector data can be categorized into two types: 1) traditional database systems extending functionalities to vector data and 2) purpose-built vector database management systems. The goodness of the above systems revolves around a multitude of factors, some of which include Indexing and Search Optimization, Fast Vector Similarity Search, Efficient Vector Storage, and Scalability etc., The paper systematically explores the hurdles in conducting similarity searches in vectors, highlighting issues such as the ambiguity of semantic similarity, the computational overhead in comparing similarities, the absence of a natural partitioning method for efficient indexing, and the challenges of handling hybrid queries that necessitate both attribute and vector-based information. These challenges underscore the shortcomings of existing systems and algorithms, prompting the exploration of innovative approaches to address these obstacles in query processing, storage/indexing, and optimization, paving the way for the development of more effective vector database management systems (VDBMSs) to serve modern-day applications.
+\end{abstract}
+
+\begin{IEEEkeywords}
+\textit{ \normalfont hybrid queries, vector storage, semantic similarity}
+\end{IEEEkeywords}
+
+\section{Introduction}
+Vector database is a type of database that store and effectively retrieve vector data, which are mathematical representations of features or attributes. Each vector has a certain number of dimensions, which can range from tens to thousands, depending on the complexity and granularity of the data.
+
+Vector databases have several advantages over traditional databases.
+
+\textbf{Fast and accurate similarity search and retrieval:} Vector
+database can find the most similar or relevant data based on
+their vector distance or similarity, which is a core functionality
+for many applications that involve natural language processing,
+computer vision, recommendation systems, etc. Traditional
+database can only query data based on exact matches or
+predefined criteria, which may not capture the semantic or
+contextual meaning of the data.
+
+\textbf{Support for complex and unstructured data:} Vector
+database can store and search data that have high complexity
+and granularity, such as text, images, audio, video, etc. These
+types of data are usually unstructured and do not fit well into
+the rigid schema of traditional database. Vector database can
+transform these data into high-dimensional vectors that can
+capture their features or attribute.
+
+\textbf{Scalability and performance:}Vector database can handle
+large-scale and real-time data analysis and processing, which
+are essential for modern data science and AI applications.
+Vector database can use techniques such as sharding, partitioning, caching, replication, etc. to distribute the workload
+and optimize the resource utilization across multiple machines
+or clusters. Traditional database may face challenges such as
+scalability bottlenecks, latency
+
+
+This paper aims to provide an easily accessible description of fundamental concepts behind VDBMSs  without focusing on the intricacies of a single product. The structure of the paper is outlined as follows: Section 2 addresses vector indexes, data structures designed for the efficient search and retrieval of vector data. These are built upon similarity search algorithms research while taking into account scalability and performance considerations associated with non-volatile storage mediums such as disks and SSDs. Moving on to Section 3, the focus shifts to the strageries to process complex queries encompassing multiple vector data types (multi-vector queries) or queries involving both attribute and vector data (hybrid queries).
+
+
+\section{Indexing}
+\textbf{K-Nearest Neighbor Search (K-NNS):} Find a vector (x) from the dataset given a query vector (q) such that the distance function between q and x is minimum. A brute-force similarity search gives us a time complexity O(nd) where n is the size of the dataset (n) and d is the dimensionality of the vector \cite{milvus, manu}. This is not an effective search strategy since it is exhaustive and causes an increased latency. This is where vector indices come to our rescue. These indices efficiently traverse the dataset to minimize the number of comparisons and speed up the query processing.
+
+Exact solutions for K-Nearest Neighbor Search (K-NNS) are effective mainly in scenarios with relatively low-dimensional data due to the challenges associated with the "curse of dimensionality." To tackle this issue, the concept of Approximate Nearest Neighbors Search (K-ANNS) was introduced, relaxing the requirement for exact searches \cite{r3}. Well-known K-ANNS solutions rely on approximated versions of tree algorithms, locality-sensitive hashing (LSH), product quantization (PQ), and proximity graphs (PG) . A vector index is an efficient organization of vector data using the above solutions. Some indices may even employ a combination of techniques, and as a result, we categorize indexes based on their structure.
+\\
+\textbf{A. Hash-based approach}: Hash-based indexing involves the use of hash functions to map high-dimensional vectors to specific locations within the database, facilitating expedited query processing. 
+\\
+\textit{Locality-Sensitive Hashing:}
+LSH is a hash-based technique that helps to efficiently search for similar items in a large dataset. However, using LSH comes with some trade-offs.
+\\
+In LSH \cite{r4,ref1}, there's a "family" of hash functions. If two items are close (determined by a distance measure), the probability that they end up with the same hash value is high. On the other hand, if they are far apart, the probability of sharing the same hash value is low. This behavior is controlled by parameters r\textsubscript{1}, r\textsubscript{2} and p\textsubscript{1}, p\textsubscript{2}.
+\\
+In a family of hash functions (H): \[if \quad d(x,q) \leq r_1 \quad \textrm{then} \quad Pr_H(h(x) = h(q)) \geq p_1\]
+\[if \quad d(x,q) \geq r_2 \quad \textrm{then} \quad Pr_H(h(x) = h(q)) \leq p_2\]
+Here d(x,q) is is the distance measure between items \textit{x} and \textit{q} and r\textsubscript{1}, r\textsubscript{2} and p\textsubscript{1}, p\textsubscript{2} are tuning parameters.
+\\
+We create a flexible group of hash functions by combining several individual hash functions. 
+% \\
+% \textit{Tunable Family of Hash Functions (H):} g(x) = concatenation of hi(x) for i between 1 and some constant K.
+% \\
+This group helps in constructing hash tables, which are like organized storage spaces. The number of these hash tables is set based on the required accuracy and performance of the application. When a search query is made, the item is hashed using these functions, and potential matches are found. The complexity of this process depends on factors like the number of hash tables and the dimensionality of the data (D). 
+\\
+\\
+\textbf{B. Quantization-based approach}: A quantizer transforms a vector into a more compact representation. This process is typically lossy, to minimize both information loss and storage requirements.
+\\
+\textit{Product Quantization:} PQ is a compression technique designed for condensing high-dimensional vectors into more efficient representations \cite{ref1}. 
+\\
+The process involves dividing a vector into multiple subvectors and applying a clustering algorithm, like k-means, to each subvector. 
+\\
+A vector x is split into m subvectors as shown below:
+\[x = (x_1, x_2, x_3, .... x_m) \]
+where x\textsubscript{i} is ith sub-vector of x, dimensionality of x\textsubscript{i} is d/m (d - dimension of x)
+\\This assigns each subvector to a finite number of possible values, referred to as centroids, resulting in a concise code represented by centroid indices for each subvector. 
+\\ Centrioid is calculated as:
+\begin{equation}
+  \mathlarger {c_i = \frac{1}{|S_i|} \mathlarger{\mathlarger{\sum}}_{x \in S_i} x}
+\end{equation}{}
+\\The algorithm leverages vector quantization, where each subvector is mapped to its nearest centroid in a predetermined codebook. Initial steps include dividing vectors into equal-sized subvectors, with the length controlled by the parameter 'm'. For each subvector, 'k' centroids are found using the k-means algorithm, determining the size of the codebook. The final code is formed by concatenating centroid indices.
+\\Product quantization stands out for its simplicity, relying on standard clustering algorithms and basic distance approximation methods. Performance is influenced by factors such as data dimensionality, the number of subvectors, centroids per subvector, and the chosen distance approximation method.
+\\
+\\
+\textbf{C. Tree-based approach:} These trees are designed to group similar data points in the same subtree, expediting the identification of approximate nearest neighbors. 
+\\
+\textit{Annoy (Approximate Nearest Neighbors Oh Yeah):} Annoy utilizes a recursive process to build a forest of binary trees \cite{ref1}. In the initial step, two random vectors, a and b, are chosen from the dataset. The entire vector space is split along a hyperplane equidistant from both a and b. Vectors in the left half of this hyperspace are assigned to the left subtree, while those in the right half go to the right subtree. 
+\\
+The second iteration repeats this process for both the left and right subtrees, creating a tree with a depth of two and four leaf nodes. This recursive subdivision continues until a leaf node contains fewer than a predefined number, K, of elements. In the original Annoy implementation, users can set the value of K.
+
+Once the index is fully constructed, the query processing begins. Given a query vector q, the search involves traversing the tree. At each intermediate node, a hyperplane splits the space. The query vector's position relative to the hyperplane is determined by calculating its distance to the left and right vectors. This process iterates until a leaf node that contains an array of, at most, K vectors is reached. These vectors are then ranked and returned as the top results to the user.
+\\
+The median hyperplane between two points p and q is given by:
+\[w.x + b = 0 \]
+Where w is p - q, x is any point on the hyperplane and b is the bias term. b = - 1/2 (w.p+w.q)
+\\
+The nearest neighbor of a query point q in the forest is given by the formula:
+\[min_{x \in C(q)} d(q, x) \]
+where C(q) is the set of candidate points obtained by traversing each tree in the forest and retrieving all the points in the leaf node that q belongs to, and d is a distance function, such as Euclidean distance or cosine distance.
+\\
+\\
+\textbf{D. Graph-based approach:} These types of indices operate on the idea that data points in a vector space can be modeled as a graph, with nodes representing the data values and edges denoting the similarity between data points. The construction of the graph ensures that nodes representing similar data points are connected by edges. 
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.7\columnwidth]{graph}
+  \caption{Proximity Graph}
+  \label{fig: Proximity Graph }
+\end{figure}
+
+
+\textit{Hierachical navigable small world (HNSW):} The HNSW algorithm introduces a hierarchical structure to the graph by allocating each point to various layers based on different probabilities. In this structure, higher layers consist of fewer points connected by longer edges, while lower layers comprise more points connected by shorter edges. The uppermost layer consists of a single point, serving as the entry point for the search process. The algorithm incorporates a parameter denoted as M, which regulates the maximum number of neighbors assigned to each point in each layer.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.7\columnwidth]{hnsw}
+  \caption{Hierarchical Navigable Small World (HNSW)}
+  \label{fig: Hierarchical Navigable Small World(HNSW) }
+\end{figure}
+HNSW offers better performance compared to alternative methods for ANNs, including tree-based and hash-based techniques \cite{r2}. Notably, HNSW excels in accommodating arbitrary distance metrics, adapting effectively to dynamic datasets, and delivering high levels of accuracy and recall while keeping memory consumption low. The algorithm strategically begins the search from the highest layer and progressively moves down to the lowest layer, selecting the closest node at each layer as the next hop.
+\begin{table}[h!]
+\centering
+\begin{tabular}{lccccc} 
+ \hline
+ \rule{0pt}{1.2em}Structure  & Index & Partitioning & Residence \\ [1.5ex] 
+ \hline
+ \rule{0pt}{1.2em}Hash & LSH & Space & Memory \\ 
+ Quantization & PQ & Clustering & Memory \\
+ Tree & Annoy & Space & Memory \\ 
+ \multirow{Graph & HNSW & Proximity & Memory \\
+                  & NSW  & Proximity & Memory \\ 
+ Combination & SPFresh & Proximity and Partitioning & Disk \\ [1ex] 
+ \hline
+\end{tabular}
+\caption{List of Indexes and where they reside.}
+\label{table:1}
+\end{table}
+However, the above indexing techniques have been in place for a while and they don't perform very well when data nature becomes dynamic. With the rise of modern-day applications that generate humungous amounts of data it is necessary for the ANNS search to process the queries without high latencies. Along with this due to the challenge of dealing with high-dimensional data, it can be expensive to determine the correct neighbors for a new vector, which is crucial for updating the index. To mitigate these update costs, current systems employ a secondary index to gather updates, and these updates are later integrated into the main index through a global rebuilding process conducted at regular intervals. Nevertheless, this approach leads to significant fluctuations in search latency and accuracy. Additionally, it demands substantial resources and is exceptionally time-consuming to execute a complete index rebuild.
+\\
+\\
+To efficiently handle extensive vector datasets with reduced expenses, an index like SPFresh [3], which is a disk-based vector index can be extremely useful. SPFresh facilitates lightweight incremental in-place local updates, eliminating the necessity for a global rebuild.
+\\
+\\
+\textbf{SPFresh}:
+This disk-based vector index relies on LIRE, a Lightweight Incremental REbalancing protocol at its core. This protocol gathers minor updates to vectors within local partitions and efficiently re-establishes a balanced distribution of local data at a minimal cost. In contrast to the resource-intensive global rebuilds, LIRE excels at preserving index quality by addressing data distribution irregularities locally in real time.
+\\
+\\
+\textbf{LIRE Protocol}:
+LIRE proceeds on a balanced SPANN kind of index. The idea behind this is that a well-balanced index may experience localized changes with just a single vector update. This ensures that the entire rebalancing process remains light and cost-effective \cite{r5,r6}.
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.9\columnwidth]{spann}
+  \caption{A Balanced SPANN Index}
+  \label{fig: A Balanced SPANN Index}
+\end{figure}
+
+An essential characteristic of an effectively partitioned vector index is the Nearest Partition Assignment (NPA). This means that each vector should be assigned to the nearest posting to ensure it is accurately represented by the posting centroid. Since continuous updates to a posting can negatively impact query recalls and latency, SPFresh addresses this by splitting a posting once it reaches a predetermined maximum length. However, a straightforward splitting approach may compromise the NPA property of the index.
+\\
+\\
+When a posting reaches a maximum allowed length it is then split. However, the creation of new centroids via a spit makes previous NPA compliance obsolete for vectors in the nearby postings. To fix this LIRE reassigns nearby postings of a split.
+\\
+\\
+Re-assignment of vectors can be costly since it involves expensive modifications to on-disk postings for each reassigned vector. Therefore, it is crucial to accurately identify the appropriate set of neighborhoods (neighboring postings) to prevent unnecessary reassignment. This way SPFresh provides support for in-place lightweight updates.
+% \subsection{Units}
+\section{Query Processing}
+\subsection{Multi vector query processing}
+In many cases like Facial Recognization, Each entity contains more than one vector attribute for example one vector for eyes, one for nose, one for mouth etc. While queriying we need to match all these vectors at same time. Formally Each entity $e$ contains $\alpha$ vectors $v_0, v_1, v_2, .... ,v_{\alpha}$ then given a query $q$, aggregated scoring function $g$ over the similarity function $f$ is defined as 
+\begin{equation*}
+g(f(q.v_0,e.v_0),f(q.v_0,e.v_0),....,f(q.v_{\alpha},e.v_{\alpha}))
+\end{equation*}
+There are multiple strageries to deal with multivector queries
+
+\subsubsection{Vector Fusion}
+Idea behind vector fusion is to combine all vectors, perform normal vector search, but inorder to this work we need our aggerate scoring function and similarity function to be compatable. Formally consider $g(x_1,..,x_{\alpha})=w1\times x_1 + .... + w_{\alpha} \times x_{\alpha}$ , where $f$ is dot product. we can re write aggergate scoring function as 
+\begin{align*}
+dot([e.v_1,.&..,e.v_{\alpha}],[w_1\times q.v_1,...,w_{\alpha}\times q.v_{\alpha}]) \\&= w_0\times dot(e.v_0,q.v_0)+...+w_{\alpha}\times dot(e.v_{\alpha},q.v_{\alpha}) \\
+&= g(f(q,e)) 
+\end{align*}
+
+If aggerate function and scoring function are not compiatable, we can use other strategies like Iterative Merging,  
+\subsubsection{Iterative Merging}
+
+Idea behind iterative merging is simple, get top k on each of vector attribute, combine the scores using Non Random Access algorithm \cite{DBLP:journals/corr/cs-DB-0204046} if we cannot find sufficient top k, we go back and increase k to 2k. 
+
+\begin{algorithm}[H]
+  \caption{Iterative merging}
+  \begin{algorithmic}[1]
+    \State $K' \gets k;$
+    \While{$K' > threshold$}
+      \ForAll{$i$}
+        \State $R_i \gets VectorQuery(q.v_i, D_i, K_i);$
+        \If{results are fully determined with NRA \cite{DBLP:journals/corr/cs-DB-0204046} on all $R_i$}
+          \State \Return top-$k$ results from $U_i,R_i;$
+        \Else
+          \State $K' \gets K' \times 2;$
+        \EndIf
+      \EndFor
+      \State \Return top-$k$ results from $U_i,R_i;$
+    \EndWhile
+  \end{algorithmic}
+\end{algorithm}
+
+
+\subsection{Attribute Filtering}
+Attribute filtering, a crucial aspect in various applications
+involving hybrid query types, combines vector and non-vector
+data to retrieve relevant information based on attribute
+constraints and vector similarities. For example, a shopping
+application like American Eagle or Amazon allows us
+to search for a particular product by image search and several
+other filters like price, brand, etc. This section explores and
+evaluates different strategies employed in attribute filtering,
+analyzing their strengths, weaknesses, and performance
+implications in query processing. This section assumes that
+each entity is associated with a single vector and 
+attribute. Strategies discussed encompass attribute-first and
+vector-first approaches, culminating in a novel partition-based
+methodology that significantly enhances query performance.
+Each query comprises two conditions: $C_A$,
+representing the attribute constraint, and $C_V$, denoting the
+normal vector query constraint responsible for returning the top-k Similar vectors.\\
+\subsubsection{Strategy A: attribute-first-vector-full-scan}\cite{10.1145/3448016.3457550}
+The method uses the attribute constraint $C_A$ to find relevant entities through index search, primarily using binary search or a B-tree index. If data exceeds memory limits, skip pointers expedite search operations. All entities in the result set are thoroughly scanned against the query vector, generating the final top-k results. This method suits highly selective $C_A$ conditions and ensures precise results.
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.5\linewidth]{StrategyA.png}
+  \caption{Strategy A}
+  \label{fig: Strategy A}
+\end{figure}
+\\
+\subsubsection{Strategy B: attribute-first-vector-search}\cite{10.1145/3448016.3457550}
+This method identifies entities based on attribute constraint $C_A$ and creates a bitmap of resulting entity IDs. The approach checks this bitmap during standard vector query processing, only including vectors that pass bitmap testing. This strategy suits moderately selective scenarios where $C_A$ or $C_V$ is selective.
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.5\linewidth]{StrategyB.png}
+  \caption{Strategy B}
+  \label{fig: Strategy B}
+\end{figure}
+\\
+\subsubsection{Strategy C: vector-first-attribute-full-scan}\cite{10.1145/3448016.3457550}
+This method uses vector indexing techniques to acquire relevant entities based on the vector constraint $C_V$. The entities undergo a scan to confirm satisfaction of attribute constraint $C_A$. It searches for $\theta*k$ outcomes during vector query processing to ensure final results. This strategy is suitable for highly selective vector constraints with few candidates.
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.5\linewidth]{StrategyC.png}
+  \caption{Strategy C}
+  \label{fig: Strategy C}
+\end{figure}
+\\
+\subsubsection{Strategy D: cost-based}\cite{10.1145/3448016.3457550}
+This Strategy is a cost-based method proposed  in AnalyticDB-V \cite{10.14778/3415478.3415541} that calculates the costs of strategies A, B, and C and selects the one with the lowest cost. According to Milvus, the cost-based approach is appropriate in nearly all situations.
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.5\linewidth]{StrategyD.png}
+  \caption{Strategy D}
+  \label{fig: Strategy D}
+\end{figure}
+\\
+\subsubsection{Strategy E: partition-based}\cite{10.1145/3448016.3457550}
+Milvus implements this methodology by partitioning the dataset based on frequently searched attributes, employing a cost-based strategy for each partition. The approach maintains attribute frequency in a hash table and increments counters whenever a query references a specific attribute. If a query range covers a particular partition's range, the strategy bypasses attribute constraint checks and focuses solely on vector query processing. For example, when price is the frequently queried attribute, the strategy divides the dataset into N partitions. When queried, the strategy may utilize only $P_0$ and $P_1$ for searching, enhancing query performance significantly.
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.5\linewidth]{StrategyE.png}
+  \caption{Strategy E}
+  \label{fig: Strategy E}
+\end{figure}
+
+\subsection{VBase - Relaxed Monotonicity}
+
+\subsubsection{Monotonicity}
+
+B-trees or B+ tree indices are maintained in conventional database systems. These indices enable query traversal in ascending or descending order, showcasing a property known as Monotonicity. This characteristic allows seamless navigation along the index in a consistent and ordered direction. In the figure \ref{fig: BTree}, if we want to search for the number 11, the query traversal navigates monotonically, starting from the root.
+
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth]{Btree.png}
+  \caption{An example of B Tree \cite{sudiksha-2021}}
+  \label{fig: BTree}
+\end{figure}
+
+Maintaining Monotonicity in vector databases poses significant challenges due to their high dimensionality. Hence, these databases adopt irregular structures such as graphs or cluster-based arrangements. For instance, in TopK queries, the traversal direction is guided by a query vector 'q,' moving towards approximate nearest neighbors based on distance metrics from anchor points (e.g., cluster centroids or sampled graph vertices). Unlike in traditional databases, this traversal can significantly alter the direction to 'q.' The process involves exploring the vector index for numerous steps until determining the unlikelihood of finding a closer neighbor than the current K neighbors. Finally, tentative indices are created based on K vectors sorted by their proximity to the target vector, establishing a temporary index that upholds Monotonicity. 
+\\
+\subsubsection{Database planner for Strategy C}
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth]{Database_planner.png}
+  \caption{Strategy C execution Flow}
+  \label{fig: Database Planner}
+\end{figure}
+
+In database planning for Strategy C, consider a shopping scenario from above. In this context, assume the query is to find the Top K products most similar to an image but within a specified price range. The process involves an initial approximate search for the closest vectors, followed by applying filters based on attributes like price to refine and present the final output as indicated in figure \ref{fig: Database Planner}. The primary challenge with this approach lies in the inability to accurately predict the number of tuples that will satisfy the filter operator. Specifically, determining the exact Top-N required to ensure that subsequent filtering yields an outcome of at least k tuples becomes an uncertain task. Two common approaches emerge to address this issue. The first involves conservatively setting a significantly large K or employing a trial-and-error method by experimenting with various K values. However, these methods tend to result in suboptimal query performance.
+\\
+
+\subsubsection{Relaxed Monotonicity} \cite{288618}
+VBASE identifies Relaxed Monotonicity as a shared attribute between vector search systems and relational databases. This characteristic is a pivotal factor in enabling databases to overcome the limitations of TopK-only interfaces and facilitates efficient execution by allowing on-the-fly early termination. Moreover, it upholds the semantics of TopK-based solutions. VBASE adopts a Two-phase pattern, delineated in Figure \ref{fig: Travesal Patterns}. In the initial phase, index traversal approximates the target vector region despite significant oscillations in vector distances. Subsequently, in the second phase, the traversal stabilizes, steadily moving away from the target vector region in an approximate manner.
+\\
+
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth]{2phasedistance.png}
+  \caption{Travesal Patterns \cite{288618}}
+  \label{fig: Travesal Patterns}
+\end{figure}
+The Formal Definition of Relaxed Monotonicity is established based on a two-phase traversal pattern, outlining how a vector index traversal progresses through a query vector q. Figure \ref{fig: An Illustration of Relaxed Monotonicity} illustrates this process, showcasing the traversal path concerning q. Initially, the query gradually approaches the neighborhood of q, depicted as a neighbor sphere centered around q. Following this, the traversal exits the sphere and enters phase two, where potential termination of the query occurs. 
+\\
+$R_q$, the radius of q's neighborhood, is defined as
+\begin{align*}
+    R_q = Max(TopE({Distance(q, v_j)| j \in [1,s−1]})) \cite{288618}
+\end{align*}
+The term "TopE" represents the E nearest neighbors of query vector q observed during the ongoing traversal at step s. For a query aiming to retrieve the K closest vectors, it necessitates that the marked count E is equal to or greater than K to ensure the generation of an adequate number of final results.
+\\\\
+$M_s^q$ is subsequently employed to ascertain if the traversal progresses into phase 2, signifying its departure from the neighborhood sphere surrounding the query vector.
+
+$M_s^q$ is defined as,
+\begin{align*}
+    M_s^q = Median({Distance(q, v_i)|i \in [s−w+1,s]}) \cite{288618}
+\end{align*}
+"Distance(q, $v_i$)" represents the distance between query vector q and vector vi, traversed within the previous traversal window. The median is utilized instead of the mean to mitigate the impact of outlier vectors within the traversal window that may have exceptionally large or small distances from q compared to other vectors. For instance, this helps account for outlier vectors at the extreme leftmost and rightmost positions in the traversal window depicted in Figure \ref{fig: An Illustration of Relaxed Monotonicity}.
+Finally, Relaxed Monotonicity can be defined as
+\begin{align*}
+    \exists s,M_t^q \geq R_q,\forall t \geq s \cite{288618}
+\end{align*}
+Overall, The TopK search query can terminate early upon entering the second phase as further traversal is improbable to reveal more similar vectors. Graph-based Vector Indices, such as Hierarchical Navigable Small World, employ a strategy where, in the initial phase, they navigate through hierarchical coarse-grained to fine-grained graphs to approach the neighborhood of query vector q. Upon reaching the fine-grained graph, the traversal transitions into the second phase, signifying the discovery of the neighborhood before departing. VBASE also implements filtering during index traversal. This optimization is a fundamental factor contributing to VBASE's superior performance over TopK-based solutions.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth]{2phaseillustration.png}
+  \caption{An Illustration of Relaxed Monotonicity \cite{288618}}
+  \label{fig: An Illustration of Relaxed Monotonicity}
+\end{figure}
+\subsubsection{VBase - NRA Improvement}
+\cite{288618} TopK-based systems perform multi-column scans using multiple sets of sorted vectors obtained through TopK in multi-column vector queries. For instance, Milvus applies the NRA \cite{DBLP:journals/corr/cs-DB-0204046} algorithm for multi-column scans, doubling the value of K and re-executing the query if the previous results are inadequate. Each attempt with a larger K constitutes an independent traversal over the underlying vector index, resulting in excessive vector access and computational overhead. In contrast, VBASE natively incorporates the NRA algorithm, eliminating the need for repetitive NRA executions. The NRA algorithm traverses each vector index in a round-robin manner. However, there may be better approaches than this approach, especially in vector search scenarios.
+\\
+The VBase approach utilizes local and global information to balance exploration and exploitation to guide index traversal (refer to Figure \ref{fig: NRA Improvement}). The traversal process is divided into rounds, incorporating a traversal decision module. This module maintains a local priority queue, storing results from the previous round. Leveraging this local information helps identify indices that are more likely to yield better results, prompting more frequent visits in the subsequent round. To prevent local optima, the decision module also stores and updates the average score of all traversed entities for each index in each round.
+Additionally, guided by this global information, we traverse each index Wi times in a round. Wi is calculated based on a hyper-parameter n2 and a weighted ratio of average scores. This strategy ensures that high-quality indices are frequently traversed while guaranteeing at least one traversal for low-quality indices in each round.
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth]{NRAImprovement.png}
+  \caption{NRA Improvement \cite{288618}}
+  \label{fig: NRA Improvement}
+\end{figure}
+
+
+
+
+
+
+
+
+
+
+
+\section{Current Challenges}
+\subsection{Similarity Measures}
+As we go to higher dimension or dealing with sparse vector data, current similarity measure like elucdian distance, cosine similarity or dot product become irrelevant. Still there is no single similarity measure that perfectly captures notion of similarity under all conditions.   This means, databases need to analyze the data and select the measure, which is not done by any vector database.
+
+\subsection{How to pick right index?}
+
+There is always a tradeoff between latency and recall while dealing with vector data due to absence of total ordering.
+Exact accurate search is very costly in vector domain due to absence of total ordering. Almost all use cases, don’t require Exact accurate search.
+Finding the right balance between query latency and recall of the results is crucial for given use case and could have large implications.  To find the right balance, end user requires comprehensive understanding the intricacies of algorithms and their tradeoffs.
+\subsection{Dealing with heterogeneous vector data types}
+Even though Milvus and Vbase has done good job of dealing different vector data types of vector data, such as dense vectors, sparse vectors, binary vectors, etc and each type of vector data may have different characteristics and requirements, such as dimensionality, sparsity, distribution, similarity metrics, There is no effeictive way for querying vector and non vector data effectively. This area is still unexplored.  
+
+\subsection{Data Freshness Problem}
+Currently most indexes are built for read heavy in other words updating indexes sometimes require complete rebuilding. In most use cases data is static or there is no need for online updates, but there are use cases where online updates are important Hence require indexes which are designed to accomdate online updates. We feel SPFresh is the right step in this direction.
+
+
+\bibliographystyle{plain}
+\bibliography{bibtext}
+% \section*{References}
+
+% Please number citations consecutively within brackets \cite{10.1145/3448016.3457550}. The 
+% sentence punctuation follows the bracket \cite{b2}. Refer simply to the reference 
+% number, as in \cite{288618}---do not use ``Ref. \cite{288618}'' or ``reference \cite{288618}'' except at 
+% the beginning of a sentence: ``Reference \cite{288618} was the first $\ldots$''
+
+% Number footnotes separately in superscripts. Place the actual footnote at 
+% the bottom of the column in which it was cited. Do not put footnotes in the 
+% abstract or reference list. Use letters for table footnotes.
+
+% Unless there are six authors or more give all authors' names; do not use 
+% ``et al.''. Papers that have not been published, even if they have been 
+% submitted for publication, should be cited as ``unpublished'' \cite{b4}. Papers 
+% that have been accepted for publication should be cited as ``in press'' \cite{b5}. 
+% Capitalize only the first word in a paper title, except for proper nouns and 
+% element symbols.
+
+% For papers published in translation journals, please give the English 
+% citation first, followed by the original foreign-language citation \cite{b6}.
+
+% \begin{thebibliography}{00}
+% \bibitem{b1} Wang, J., Yi, X., Guo, R., Jin, H., Xu, P., Li, S., Wang, X., Guo, X., Li, C., Xu, X., Yu, K., Yuan, Y., Zou, Y., Long, J., Cai, Y., Li, Z., Zhang, Z., Mo, Y., Gu, J., Jiang, R., Wei, Y., and Xie, C. (2021). Milvus: A Purpose-Built Vector Data Management System. In Proceedings of the 2021 International Conference on Management of Data (SIGMOD ’21), June 20–25, 2021, Virtual Event, China. ACM, New York, NY, USA. 
+% \bibitem{b2} https://medium.com/beuni/b-tree-and-b-tree-d27a9cd3630b
+% \bibitem{b3} Zhang, Q., Xu, S., Chen, Q., Sui, G., Xie, J., Cai, Z., Chen, Y., He, Y., Yang, Y., Yang, F., Yang, M., and Zhou, L. (2023). "VBASE: Unifying Online Vector Similarity Search and Relational Queries via Relaxed Monotonicity." In 17th USENIX Symposium on Operating Systems Design and Implementation (OSDI 23) (pp. 377-395). Boston, MA: USENIX Association.
+% \bibitem{b4} Fagin, R., Lotem, A., and Naor, M. (2001). Optimal aggregation algorithms for middleware. In Buneman, P. (Ed.), Proceedings of the Twentieth ACM SIGACT-SIGMOD-SIGART Symposium on Principles of Database Systems, May 21-23, 2001, Santa Barbara, California, USA. ACM.
+% \bibitem{b5} Guo, R., Luan, X., Xiang, L., Yan, X., Yi, X., Luo, J., Cheng, Q., Xu, W., Luo, J., Liu, F. and Cao, Z., 2022. Manu: a cloud native vector database management system. arXiv preprint arXiv:2206.13843.
+% \bibitem{b6} Xu, Y., Liang, H., Li, J., Xu, S., Chen, Q., Zhang, Q., Li, C., Yang, Z., Yang, F., Yang, Y. and Cheng, P., 2023, October. SPFresh: Incremental In-Place Update for Billion-Scale Vector Search. In Proceedings of the 29th Symposium on Operating Systems Principles (pp. 545-561). 
+% \bibitem{b7} Pan, J.J., Wang, J. and Li, G., 2023. Survey of Vector Database Management Systems. arXiv preprint arXiv:2310.14021.
+% \bibitem{b8} Wei, C., Wu, B., Wang, S., Lou, R., Zhan, C., Li, F., and Cai, Y. (2020). AnalyticDB-V: A Hybrid Analytical Engine Towards Query Fusion for Structured and Unstructured Data. Proceedings of the VLDB Endowment (PVLDB) 13, 12, 3152–3165.
+% \bibitem{b10} Y. A. Malkov and D. A. Yashunin, “Efficient and robust approximate nearest neighbor search using hierarchical navigable small world graphs,” IEEE transactions on pattern analysis and machine intelligence, vol. 42, no. 4, p. 824–836, 2018.
+% \bibitem{b11}D. Xu, I. W. Tsang, Y. Zhang, and J. Yang, “Online product quantization,” IEEE Transactions on Knowledge and Data Engineering, vol. 30, no. 11, p. 2185–2198, 2018.
+% \bibitem{b12} A. Andoni, P. Indyk, et al., “Locality sensitive hashing (lsh) home page.” ˆ1ˆ, 2023. Accessed: 2023-10-18.
+% \bibitem{b13} K. Bob, D. Teschner, T. Kemmer, D. Gomez-Zepeda, S. Tenzer, B. Schmidt, and A. Hildebrandt, “Locality-sensitive hashing enables efficient and scalable signal classification in high-throughput mass spectrometry raw data,” BMC Bioinformatics, vol. 23, no. 1, p. 287, 2022.
+% \bibitem{b14} J. L. Bentley, “Multidimensional binary search trees used for associative searching,” Communications of the ACM, vol. 18, no. 9, p. 509–517, 1975.
+% \end{thebibliography}
+\vspace{12pt}
+
+\end{document}
